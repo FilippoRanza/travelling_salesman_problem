@@ -48,11 +48,7 @@ fn update_cost(graph: &Array2<f64>, node: usize, path: &mut HashMap<usize, usize
                 path.insert(i, node);
             }
         }
-    
-
     }
-
-
 }
 
 fn find_min_cost(cost: &HashMap<usize, f64>, selected: &Vec<bool>) -> Option<usize> {
@@ -166,6 +162,33 @@ mod test{
         };
 
     }
+
+    #[test]
+    fn test_update_cost() {
+        let graph = get_graph();
+        let from = 0;
+        let mut selected = nodes(&graph, from);
+        let (mut path, mut cost) = initialize(&graph, from);
+
+        //first iteration
+        let curr = 2;
+        selected[curr] = true;
+        update_cost(&graph, curr, &mut path, &mut cost, &selected);
+
+        assert_eq!(path.len(), cost.len());
+        assert_eq!(path.len(), 4);
+
+
+        assert_eq!(path[&5], 2);
+        assert_eq!(path[&3], 2);
+
+        //(0,2) + (2, 5)
+        assert_eq!(cost[&5], 6.0 + 18.0);
+        //(0, 2) + (2, 3)
+        assert_eq!(cost[&3], 6.0 + 4.0);
+        
+    }
+
 
     #[test]
     fn test_dijkstra1() {
