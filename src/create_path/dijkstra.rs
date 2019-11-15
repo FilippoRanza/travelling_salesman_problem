@@ -211,7 +211,7 @@ mod test{
     }
 
     #[test]
-    fn test_dijkstra() {
+    fn test_dijkstra1() {
         let graph = array![[0.0, 9.0, 6.0, 0.0, 0.0, 0.0, 0.0],
                             [9.0, 0.0, 11.0, 1.0, 20.0, 0.0, 0.0],
                             [6.0, 11.0, 0.0, 4.0, 0.0, 18.0, 0.0],
@@ -223,10 +223,37 @@ mod test{
         match path {
             Some(p) => assert_eq!(p, vec![2, 3, 1]),
             None => assert!(false)
-        };
-        
-                
+        };           
     }
     
+    #[test]
+    fn test_dijkstra2() {
+        let graph = array![[0.0, 1.0, 9.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 8.0, 0.0, 4.0, 0.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 7.0, 10.0, 0.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.0, 0.0],
+                           [0.0, 0.0, 0.0, 10.0, 0.0, 12.0, 0.0, 12.0, 0.0],
+                           [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0],
+                           [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 0.0, 14.0],
+                           [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]];
+
+        let path = dijkstra(&graph, 0, 8);
+        match path {
+            Some(p) => {
+                let mut stat = false;
+                println!("{:?}", p);
+                let possible_results: [Vec<usize>; 3] = [vec![0, 1, 4, 5, 6, 8], vec![0, 1, 4, 7, 6, 8], vec![0, 1, 4, 7, 8]];
+                for res in possible_results.iter() {
+                    if p == *res {
+                        stat = true;
+                        break;
+                    }
+                }
+                assert!(stat);
+            }
+            None => assert!(false)
+        };  
+    }
 
 }
