@@ -197,7 +197,10 @@ mod test{
         assert_eq!(dist.get_value(2).unwrap(), 6.0);
 
         for i in 3..7 {
-            let a = dist.get_value(i as usize);
+            match dist.get_value(i as usize) {
+                Some(_)=> assert!(false),
+                None => assert!(true)
+            }
         }
 
 
