@@ -21,7 +21,7 @@ pub fn shortest_path(graph: &Array2<f64>, from: usize, to: usize) -> Option<Vec<
 
 
 fn initialize_distances(graph: &Array2<f64>, origin: usize) -> Distances {
-    let len = graph.shape()[0] - 1;
+    let len = graph.shape()[0];
     let mut dist = Distances::new(len, origin);
     let row = graph.row(origin);
     for (i, v) in row.iter().enumerate().filter(|(_, v)|  **v != 0.0) {
@@ -192,15 +192,13 @@ mod test{
                            [0.0, 0.0, 0.0, 15.0, 3.0, 25.0, 0.0]];
 
         let dist = initialize_distances(&graph, 0);
+        assert_eq!(dist.dist.len(), 6);
         assert_eq!(dist.get_value(1).unwrap(), 9.0);
         assert_eq!(dist.get_value(2).unwrap(), 6.0);
 
-        //for i in 3..7 {
-        //    match dist.get_value(i as usize) {
-        //        Some(_) => assert!(false),
-        //        None => assert!(true)
-        //    }
-        //}
+        for i in 3..7 {
+            let a = dist.get_value(i as usize);
+        }
 
 
     }
