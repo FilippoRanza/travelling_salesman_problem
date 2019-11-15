@@ -5,32 +5,67 @@ use ndarray::prelude::Array2;
 
 
 pub fn dijkstra(graph: &Array2<f64>, from: usize, to:usize) -> Option<Vec<usize>> {
+    
+    let mut selected = nodes(graph, from);
+    let (mut path, mut cost) = initialize(graph, from);
+
     let mut curr = from;
-    let mut path = HashMap::new();
-    let mut dist = Distances::new(graph, from);
-
-    let mut selected = Vec::new();
-    selected.push(from);
-   
-
     while curr != to {
-        let missing = missing_nodes(graph, &selected);
-        match dist.min_value(&missing) {
-            Some(next) => {
-               selected.push(next);
-               path.insert(next, curr);
-               dist.add_distances(graph, curr, next, &missing);
-               curr = next;
+        let min = find_min_cost(&cost, &selected);
+        match min {
+            Some(node) =>{
+                selected[node] = true;
+                update_cost(graph, node, &mut path, &mut cost, &selected);
+                curr = node;
             },
-            None => return None
-        }
+            None => return  None,
+        };
     }
+
     Some(build_path(path, from, to))
 }
 
-fn missing_nodes(graph: &Array2<f64>, selected: &Vec<usize>) -> Vec<usize> {
+
+
+fn nodes(graph: &Array2<f64>, begin: usize) -> Vec<bool> {
     let len = graph.shape()[0];
-    (0..len).filter(|x| ! selected.contains(x)).collect::<Vec<usize>>()
+    (0..len).map(|x| x == begin).collect::<Vec<bool>>()
+}
+
+fn update_cost(graph: &Array2<f64>, node: usize, path: &mut HashMap<usize, usize>, cost: &mut HashMap<usize, f64>, selected: &Vec<bool>){
+    let row = graph.row(node);
+    let node_cost = cost[&node];
+    for (i, v) in row.iter().enumerate().filter(|(_, v)| **v != 0.0).filter(|(i, _)| !selected[*i]) {
+        match cost.get(&i) {
+            Some(curr) => {
+                if *curr > (*v + node_cost) {
+                    cost.insert(i, *v + node_cost);
+                    path.insert(i, node);
+                }
+            },
+            None => {
+                cost.insert(i, *v + node_cost);
+                path.insert(i, node);
+            }
+        }
+    
+
+    }
+
+
+}
+
+fn find_min_cost(cost: &HashMap<usize, f64>, selected: &Vec<bool>) -> Option<usize> {
+    let mut out = None;
+    let mut curr = 0.0;
+    for (i, v)in cost.iter().filter(|(k, _)| !selected[**k]) {
+        if out == None || curr > *v {
+            out = Some(*i);
+            curr = *v;
+        }
+    }
+
+    out
 }
 
 fn build_path(tree: HashMap<usize, usize>, from: usize, to: usize) -> Vec<usize> {
@@ -48,76 +83,18 @@ fn build_path(tree: HashMap<usize, usize>, from: usize, to: usize) -> Vec<usize>
     out
 }
 
-struct Distances {
-    dist: HashMap<usize, f64>,
-    start: usize,
+fn initialize(graph: &Array2<f64>, from: usize) -> (HashMap<usize, usize>, HashMap<usize, f64>) {
+    let mut cost = HashMap::new();
+    let mut path = HashMap::new();
+
+    let row = graph.row(from);
+    for (i, v) in row.iter().enumerate().filter(|(_, v)| **v != 0.0) {
+        path.insert(i, from);
+        cost.insert(i, *v);
+    }
+
+    (path, cost)
 }
-
-impl Distances {
-    fn new(graph: &Array2<f64>, origin: usize) -> Distances {
-        let mut dist = HashMap::new();
-        let row = graph.row(origin);
-        for (i, v) in row.iter().enumerate().filter(|(_, v)| **v != 0.0) {
-            dist.insert(i, *v);
-        }
-        Distances{dist: dist, start: origin}
-    } 
-
-    fn get_dist(&self, node: usize) -> Option<f64> {
-        if node == self.start { 
-            Some(0.0)
-        }
-        else {
-            match self.dist.get(&node) {
-                Some(v) => Some(*v),
-                None => None
-            }
-        }
-    }
-
-    fn add_distances(&mut self, graph: &Array2<f64>, curr: usize, next: usize, missing: &Vec<usize>) {
-        let row = graph.row(next);
-        let curr = self.get_dist(curr).unwrap();
-        for m in missing.iter() {
-            let tmp = row.get(*m).unwrap();
-            if *tmp != 0.0 {
-                self.set_dist(*m, tmp + curr);
-            }
-        }
-    }
-
-    fn set_dist(&mut self, node: usize, value: f64) {
-        match self.dist.get_mut(&node) {
-            Some(v) => *v = value,
-            None => {
-                self.dist.insert(node, value);
-            }
-        };
-    }
-
-    fn min_value(&self, nodes: &Vec<usize>) -> Option<usize> {
-        let mut out = None;
-        let mut curr = 0.0;
-        for n in nodes.iter() {
-            let tmp = self.get_dist(*n);
-            match tmp {
-                Some(v) => {
-                    if out == None || curr > v {
-                        curr = v;
-                        out = Some(*n); 
-                    }
-                },
-                None => {}
-            }
-        }
-
-        out
-    }
-
-}
-
-
-
 
 
 #[cfg(test)]
@@ -144,87 +121,62 @@ mod test{
 
 
     #[test]
-    fn test_distances() {
-        let graph = array![[0.0, 9.0, 6.0, 0.0, 0.0, 0.0, 0.0],
-                            [9.0, 0.0, 11.0, 1.0, 20.0, 0.0, 0.0],
-                            [6.0, 11.0, 0.0, 4.0, 0.0, 18.0, 0.0],
-                            [0.0, 1.0, 2.0, 0.0, 13.0, 28.0, 15.0],
-                            [0.0, 20.0, 0.0, 13.0, 0.0, 0.0, 3.0],
-                            [0.0, 0.0, 18.0, 28.0, 0.0, 0.0, 25.0],
-                            [0.0, 0.0, 0.0, 15.0, 3.0, 25.0, 0.0]];
-
-        let mut dist = Distances::new(&graph, 0);
-        assert_eq!(dist.get_dist(0).unwrap(), 0.0);
-        assert_eq!(dist.get_dist(1).unwrap(), 9.0);
-        assert_eq!(dist.get_dist(2).unwrap(), 6.0);
-
-        for i in 3..7 {
-            match dist.get_dist(i as usize) {
-                Some(_) => assert!(false),
-                None => assert!(true)
-            };
+    fn test_selected() {
+        let graph = get_graph();
+        let from = 0;
+        let selected = nodes(&graph, from);
+        assert_eq!(selected.len(), 7);
+        for (i, s) in selected.iter().enumerate() {
+            if i == from {
+                assert!(s);
+            }
+            else {
+                assert!(!s);
+            }
         }
+    }
 
-        dist.set_dist(1, 4.5);
-        assert_eq!(dist.get_dist(1).unwrap(), 4.5);
-        assert_eq!(dist.get_dist(2).unwrap(), 6.0);
+    #[test]
+    fn test_initialize() {
+        let graph = get_graph();
+        let from = 0;
+        let (path, cost) = initialize(&graph, from);
+        assert_eq!(path.len(), cost.len());
+        assert_eq!(path.len(), 2);
 
-        let min = dist.min_value(&vec![1, 2]);
-        match min {
-            Some(v) => assert_eq!(v, 1),
+        assert_eq!(*path.get(&1).unwrap(), 0);
+        assert_eq!(*path.get(&2).unwrap(), 0);
+
+        assert_eq!(*cost.get(&1).unwrap(), 9.0); 
+        assert_eq!(*cost.get(&2).unwrap(), 6.0);
+    }
+
+
+    #[test]
+    fn test_find_min_cost() {
+        let graph = get_graph();
+        let from = 0;
+        let selected = nodes(&graph, from);
+        let (_, cost) = initialize(&graph, from);
+
+        let ans = find_min_cost(&cost, &selected);
+        match ans  {
+            Some(node) => assert_eq!(node, 2),
             None => assert!(false)
         };
 
-        let min = dist.min_value(&vec![5, 6]);
-        match min {
-            Some(_) => assert!(false),
-            None => assert!(true)
-        };
-
-        dist.add_distances(&graph, 0, 1, &vec![3, 4]);
-        assert_eq!(dist.get_dist(1).unwrap(), 4.5);
-        assert_eq!(dist.get_dist(2).unwrap(), 6.0);
-        assert_eq!(dist.get_dist(3).unwrap(), 1.0);
-        assert_eq!(dist.get_dist(4).unwrap(), 20.0);
-
-        for i in 5..7 {
-            match dist.get_dist(i as usize) {
-                Some(_) => assert!(false),
-                None => assert!(true)
-            };
-        }
-
-    }
-    
-    #[test]
-    fn test_missing() {
-        let graph = array![[0.0, 9.0, 6.0, 0.0, 0.0, 0.0, 0.0],
-                           [9.0, 0.0, 11.0, 1.0, 20.0, 0.0, 0.0],
-                           [6.0, 11.0, 0.0, 4.0, 0.0, 18.0, 0.0],
-                           [0.0, 1.0, 2.0, 0.0, 13.0, 28.0, 15.0],
-                           [0.0, 20.0, 0.0, 13.0, 0.0, 0.0, 3.0],
-                           [0.0, 0.0, 18.0, 28.0, 0.0, 0.0, 25.0],
-                           [0.0, 0.0, 0.0, 15.0, 3.0, 25.0, 0.0]];
-
-        let missing = missing_nodes(&graph, &vec![0, 2, 4]);
-        assert_eq!(missing, vec![1, 3, 5, 6]);
     }
 
     #[test]
     fn test_dijkstra1() {
-        let graph = array![[0.0, 9.0, 6.0, 0.0, 0.0, 0.0, 0.0],
-                            [9.0, 0.0, 11.0, 1.0, 20.0, 0.0, 0.0],
-                            [6.0, 11.0, 0.0, 4.0, 0.0, 18.0, 0.0],
-                            [0.0, 1.0, 2.0, 0.0, 13.0, 28.0, 15.0],
-                            [0.0, 20.0, 0.0, 13.0, 0.0, 0.0, 3.0],
-                            [0.0, 0.0, 18.0, 28.0, 0.0, 0.0, 25.0],
-                            [0.0, 0.0, 0.0, 15.0, 3.0, 25.0, 0.0]];
+        let graph = get_graph();
         let path = dijkstra(&graph, 2, 1);
         match path {
             Some(p) => assert_eq!(p, vec![2, 3, 1]),
             None => assert!(false)
         };           
     }
+
     
     #[test]
     fn test_dijkstra2() {
@@ -254,6 +206,16 @@ mod test{
             }
             None => assert!(false)
         };  
+    }
+
+    fn get_graph() -> Array2<f64> {
+        array![[0.0, 9.0, 6.0, 0.0, 0.0, 0.0, 0.0],
+                [9.0, 0.0, 11.0, 1.0, 20.0, 0.0, 0.0],
+                [6.0, 11.0, 0.0, 4.0, 0.0, 18.0, 0.0],
+                [0.0, 1.0, 2.0, 0.0, 13.0, 28.0, 15.0],
+                [0.0, 20.0, 0.0, 13.0, 0.0, 0.0, 3.0],
+                [0.0, 0.0, 18.0, 28.0, 0.0, 0.0, 25.0],
+                [0.0, 0.0, 0.0, 15.0, 3.0, 25.0, 0.0]]
     }
 
 }
