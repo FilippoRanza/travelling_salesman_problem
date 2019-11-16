@@ -26,7 +26,23 @@ pub fn bellman_ford(graph: &Array2<f64>, from: usize, to: usize) -> Option<Vec<u
             }
         }
     }
-    println!("{:?}", path);
+    
+    for ((i, j), w) in graph.indexed_iter().filter(|(_, w)| **w != 0.0) {
+        match cost[j] {
+            Some(cj) => match cost[i] {
+                Some(ci) => {
+                    if ci + w < cj {
+                        return None;
+                    }
+                }
+                None => {}
+            },
+            None => {},
+        }
+    }
+
+
+
     build_path(path, from, to)
 }
 
@@ -107,6 +123,7 @@ mod test {
 
     #[test]
     fn test_bellman_ford2() {
+        // a negative weight arc
         let graph = array![
             [0.0, -3.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0, 0.0],
@@ -118,6 +135,21 @@ mod test {
         match path {
             Some(p) => assert_eq!(p, vec![0, 1, 2, 3, 4]),
             None => assert!(false),
+        }
+    }
+
+
+    #[test]
+    fn test_bellman_ford3() {
+        let graph = array![
+            [0.0, -1.0, -3.0],
+            [-1.0, 0.0, -2.0],
+            [-3.0, -2.0, 0.0] 
+        ];
+        let path = bellman_ford(&graph, 0, 4);
+        match path {
+            Some(_) => assert!(false),
+            None => assert!(true),
         }
     }
 
