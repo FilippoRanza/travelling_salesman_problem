@@ -1,3 +1,3 @@
 
 pub mod insertion;
-pub mod dijkstra;
+pub mod shortest_path;
