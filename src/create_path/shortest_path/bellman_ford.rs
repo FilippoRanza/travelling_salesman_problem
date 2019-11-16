@@ -81,7 +81,7 @@ mod test {
     #[test]
     fn test_fail_build_path() {
         let path = vec![Some(2), Some(3), None, None, Some(3)];
-        let ans = build_path(path, 2, 4).unwrap();
+        let _ = build_path(path, 2, 4).unwrap();
     }
 
     #[test]
