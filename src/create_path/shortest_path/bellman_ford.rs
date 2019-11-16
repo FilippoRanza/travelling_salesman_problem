@@ -65,6 +65,25 @@ mod test {
     use super::*;
     use ndarray::array;
 
+
+    #[test]
+    fn test_correct_build_path() {
+        let path = vec![Some(2), Some(3), None, Some(2), Some(3)];
+        let ans = build_path(path, 2, 4);
+        match ans {
+            Some(p) => assert_eq!(p, vec![2, 3, 4]),
+            None => assert!(false),
+        };
+    }
+
+
+    #[should_panic]
+    #[test]
+    fn test_fail_build_path() {
+        let path = vec![Some(2), Some(3), None, None, Some(3)];
+        let ans = build_path(path, 2, 4).unwrap();
+    }
+
     #[test]
     fn test_initialize() {
         let graph = get_graph();
