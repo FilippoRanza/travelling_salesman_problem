@@ -185,7 +185,6 @@ mod test {
         match path {
             Some(p) => {
                 let mut stat = false;
-                println!("{:?}", p);
                 let possible_results: [Vec<usize>; 3] = [
                     vec![0, 1, 4, 5, 6, 8],
                     vec![0, 1, 4, 7, 6, 8],

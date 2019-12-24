@@ -58,7 +58,6 @@ mod test {
         let ans = farthest_inserction(&graph, 2, 0);
         match ans {
             Some(v) => {
-                println!("{:?}", v);
                 assert_eq!(3, v.len());
                 assert_eq!(vec![2, 1, 0], v);
             }

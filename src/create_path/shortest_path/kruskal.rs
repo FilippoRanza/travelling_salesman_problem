@@ -2,27 +2,26 @@
 extern crate ndarray;
 use ndarray::prelude::Array2;
 use std::cmp::Ordering::{Less, Greater};
+use std::collections::HashSet;
 
 
 pub fn kruskal(graph: &Array2<f64>) -> Vec<(usize, usize)> {
     let arcs = extract_arcs(&graph);
-    let mut selected: Vec<bool> = (0..arcs.len()).map(|_| false).collect();
+    //let mut selected: Vec<bool> = (0..arcs.len()).map(|_| false).collect();
     let mut out = Vec::new();
-    let mut missing = arcs.len() - 1;
+    let mut nodes = HashSet::new();
 
     for arc in arcs.iter() {
 
-        if missing == 0 {
+        if nodes.len() == (arcs.len() - 1) && connected(&out){
             break;
         }
 
-        if (!selected[arc.from]) || (!selected[arc.to]) {
+        if !(nodes.contains(&arc.from)) || !(nodes.contains(&arc.to))  {
             out.push((arc.from, arc.to));
-            selected[arc.from] = true;
-            selected[arc.to] = true;
-            missing -= 1;
+            nodes.insert(arc.from);
+            nodes.insert(arc.to);
         }
-
     }
     
     out
@@ -35,6 +34,28 @@ fn extract_arcs(graph: &Array2<f64>) -> Vec<Arc> {
     tmp
 }
 
+fn connected(tree: &Vec<(usize, usize)>) -> bool {
+    let mut reach = HashSet::new();
+    for (f, t) in tree.iter() {
+        if reach.len() == 0{
+            reach.insert(f);
+            reach.insert(t);
+        }
+        else {
+            if reach.contains(&f) {
+                reach.insert(t);
+            }
+            else if reach.contains(&t) {
+                reach.insert(f);
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    true
+}
 
 struct Arc {
     from: usize,
@@ -96,6 +117,14 @@ mod test {
             assert_eq!(a.weight, *c);
         }
         
+    }
+
+    #[test]
+    fn test_connected() {
+        let connected_tree = vec![(2,4), (3, 4), (0, 1), (0, 2)];
+        let not_connected = vec![(2, 4), (3, 4), (0, 1)];
+        assert_eq!(connected(&connected_tree), true);
+        assert_eq!(connected(&not_connected), false);
     }
 
     fn get_graph() -> Array2<f64> {
